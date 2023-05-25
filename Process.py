@@ -1,5 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
+from User import User
 
 class ProccessStates(Enum):
     SUSPENSE = 0    # приостановка
@@ -9,7 +10,7 @@ class ProccessStates(Enum):
 @dataclass
 class Process:
     process_id: int         # идентификатор процесса
-    user_id: int            # идентификатор пользователя
+    user: User              # владелец процесса
     state: ProccessStates   # состояние процесса
     cpu: float              # использование процессом ресурсов ЦП
     memory: float           # использование процессом памяти

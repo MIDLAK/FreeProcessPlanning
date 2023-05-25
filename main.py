@@ -10,20 +10,20 @@ process_manager = ProcessManager(memory=8000, quantum=1)
 def main():
     # создание пользователей
     vadim = User(user_id=1, group_id=1, user_name='vadim', promised_cpu=50.0)
-    regina = User(user_id=3, group_id=1, user_name='regian', promised_cpu=50.0)
-    sofia = User(user_id=2, group_id=1, user_name='sofia', promised_cpu=50.0)
+    regina = User(user_id=3, group_id=1, user_name='regian', promised_cpu=25.0)
+    sofia = User(user_id=2, group_id=1, user_name='sofia', promised_cpu=25.0)
 
-    process_manager.create_process(user_id=regina.user_id, time=4)
+    process_manager.create_process(user=regina, time=4)
 
     pm_thread = Thread(target=process_manager.run, daemon=True)
     pm_thread.start()
 
-    process_manager.create_process(user_id=sofia.user_id, time=10)
-    process_manager.create_process(user_id=sofia.user_id, time=5)
-    process_manager.create_process(user_id=sofia.user_id, time=16)
-    process_manager.create_process(user_id=sofia.user_id, time=1)
-    process_manager.create_process(user_id=sofia.user_id, time=1)
-    process_manager.create_process(user_id=sofia.user_id, time=3)
+    process_manager.create_process(user=sofia, time=10)
+    process_manager.create_process(user=sofia, time=5)
+    process_manager.create_process(user=sofia, time=16)
+    process_manager.create_process(user=sofia, time=1)
+    process_manager.create_process(user=sofia, time=1)
+    process_manager.create_process(user=vadim, time=20)
 
     pm_thread.join()
 

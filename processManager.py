@@ -1,4 +1,6 @@
 from Process import Process, ProccessStates
+from User import User
+from random import random, randrange, randint
 from time import sleep
 from loguru import logger
 from threading import Lock, Thread
@@ -20,17 +22,17 @@ class ProcessManager(object):
         self.quantum = abs(quantum) # квантум времени в секундах
 
 
-    def create_process(self, user_id: int, time: float) -> Process | ValueError:
+    def create_process(self, user: User, time: float) -> Process | ValueError:
         '''Запрос на создание пользователем с идентификатором 
         user_id процесса с временем выполнения time '''
         if self.__is_resources(time) == False:
-            logger.error(f'Недостаточно ресурсов для создания процесса user_id = {user_id}')
+            logger.error(f'Недостаточно ресурсов для создания процесса user_id = {user.user_id}')
             return ValueError('Недостаточно ресурсов')
 
         # создание нового процесса
         free_pid = self.__free_pid()
         sleep(1) # время на создание процесса
-        process = Process(process_id=free_pid, user_id=user_id,
+        process = Process(process_id=free_pid, user=user,
                           state=ProccessStates.SUSPENSE, cpu=0.0,
                           memory=0.0, time=time)
         self.process_list.append(process)
@@ -66,8 +68,13 @@ class ProcessManager(object):
             for process in self.process_list:
                 process.state = ProccessStates.EXECUTION
                 logger.debug(f'Процесс pid = {process.process_id} выполняется')
-                sleep(self.quantum)
-                process.time = process.time - self.quantum
+
+                # если процессу нужно меньше времени чем предполагает квант
+                if process.time - self.quantum * process.user.promised_cpu/10 < 0:
+                    sleep(process.time)
+                else:
+                    sleep(self.quantum * process.user.promised_cpu/100)
+                process.time = process.time - self.quantum * process.user.promised_cpu/100
 
                 # проверка на завершение выполнения процесса
                 if process.time <= 0:
