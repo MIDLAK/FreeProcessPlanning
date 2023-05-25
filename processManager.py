@@ -1,9 +1,10 @@
 from Process import Process, ProccessStates
 from User import User
-from random import random, randrange, randint, shuffle
 from time import sleep
 from loguru import logger
-from threading import Lock, Thread
+
+
+import matplotlib.pyplot as plt
 
 # настройка логирования
 logger.add('../logs/process_manager.log', format='{time} {level} {message}',
@@ -77,6 +78,7 @@ class ProcessManager(object):
                     else:
                         sleep(self.quantum)
                     process.time = process.time - self.quantum
+                    counter = counter + 1
 
                     # проверка на завершение выполнения процесса
                     if process.time <= 0:
@@ -84,7 +86,6 @@ class ProcessManager(object):
                         logger.info(f'Процесс pid = {process.process_id} выполнен')
                         self.process_list.remove(process)
                         break
-                    counter = counter + 1
                     process.state = ProccessStates.SUSPENSE
                     
                 logger.debug(f'Процесс pid = {process.process_id} выполняется {counter} раз')
