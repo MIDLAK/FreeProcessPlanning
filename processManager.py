@@ -1,6 +1,6 @@
 from Process import Process, ProccessStates
 from User import User
-from random import random, randrange, randint
+from random import random, randrange, randint, shuffle
 from time import sleep
 from loguru import logger
 from threading import Lock, Thread
@@ -31,10 +31,11 @@ class ProcessManager(object):
 
         # создание нового процесса
         free_pid = self.__free_pid()
-        sleep(1) # время на создание процесса
+        sleep(0.5) # время на создание процесса
         process = Process(process_id=free_pid, user=user,
                           state=ProccessStates.SUSPENSE, cpu=0.0,
                           memory=0.0, time=time)
+        # распределение процесса в сооветвующую приоритетную группу
         self.process_list.append(process)
         logger.info(f'Процесс pid = {process.process_id} создан')
         return process 
@@ -66,20 +67,25 @@ class ProcessManager(object):
         '''Запускается выполнение процессов из очереди'''
         while True:
             for process in self.process_list:
-                process.state = ProccessStates.EXECUTION
-                logger.debug(f'Процесс pid = {process.process_id} выполняется')
+                counter = 0
+                for _ in range(2**(6 - process.user.priority)):
+                    process.state = ProccessStates.EXECUTION
 
-                # если процессу нужно меньше времени чем предполагает квант
-                if process.time - self.quantum * process.user.promised_cpu/10 < 0:
-                    sleep(process.time)
-                else:
-                    sleep(self.quantum * process.user.promised_cpu/100)
-                process.time = process.time - self.quantum * process.user.promised_cpu/100
+                    # если процессу нужно меньше времени чем предполагает квант
+                    if process.time < self.quantum:
+                        sleep(process.time)
+                    else:
+                        sleep(self.quantum)
+                    process.time = process.time - self.quantum
 
-                # проверка на завершение выполнения процесса
-                if process.time <= 0:
-                    process.state = ProccessStates.COMPLETED
-                    logger.info(f'Процесс pid = {process.process_id} выполнен')
-                    self.process_list.remove(process)
+                    # проверка на завершение выполнения процесса
+                    if process.time <= 0:
+                        process.state = ProccessStates.COMPLETED
+                        logger.info(f'Процесс pid = {process.process_id} выполнен')
+                        self.process_list.remove(process)
+                        break
+                    counter = counter + 1
+                    process.state = ProccessStates.SUSPENSE
+                    
+                logger.debug(f'Процесс pid = {process.process_id} выполняется {counter} раз')
 
-                process.state = ProccessStates.SUSPENSE
