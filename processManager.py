@@ -3,9 +3,6 @@ from User import User
 from time import sleep
 from loguru import logger
 
-
-import matplotlib.pyplot as plt
-
 # настройка логирования
 logger.add('../logs/process_manager.log', format='{time} {level} {message}',
            level='DEBUG', rotation='10 MB', compression='zip')
