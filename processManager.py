@@ -31,8 +31,8 @@ class ProcessManager(object):
         free_pid = self.__free_pid()
         sleep(0.5) # время на создание процесса
         process = Process(process_id=free_pid, user=user,
-                          state=ProccessStates.SUSPENSE, cpu=0.0,
-                          memory=0.0, time=time)
+                          state=ProccessStates.SUSPENSE,
+                          time=time)
         # распределение процесса в сооветвующую приоритетную группу
         self.process_list.append(process)
         logger.info(f'Процесс pid = {process.process_id} создан')
