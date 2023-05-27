@@ -14,10 +14,13 @@ logger.add('../logs/gui.log', format='{time} {level} {message}',
 
 class MainFrame(Frame):
 
-    def __init__(self):
+    def __init__(self, process_manager: ProcessManager):
         super().__init__()
         self.initUI()
         self.users = []
+        self.process_manager = process_manager
+        pm_thread = Thread(target=process_manager.run, daemon=True)
+        pm_thread.start()
 
     def initUI(self):
         self.master.title('Справедливое планирование')
@@ -127,16 +130,19 @@ class MainFrame(Frame):
             if u.user_name == user_name:
                 user = u
                 for _ in range(int(self.process_ent.get())):
-                    process_manager.create_process(user=user, time=randrange(1, 10))
+                    self.process_manager.create_process(user=user, time=randrange(1, 10))
                 break
 
+    def create_pie_diagramm(self) -> None:
+        frame5 = Frame(self)
+        frame5.pack(fill=X)
 
-process_manager = ProcessManager(memory=8000, quantum=0.01)
-pm_thread = Thread(target=process_manager.run, daemon=True)
-pm_thread.start()
+
+process_manager = ProcessManager(quantum=0.1, memory=8000)
 
 # параметры окна
 main_window = Tk()
 main_window.geometry('600x600+600+600')
-app = MainFrame()
+app = MainFrame(process_manager=process_manager)
+app.create_pie_diagramm()
 main_window.mainloop()
