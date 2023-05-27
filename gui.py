@@ -1,11 +1,10 @@
-from tkinter import IntVar, StringVar, Tk, Text, BOTH, X, N, LEFT, RIGHT
-from tkinter.ttk import Combobox, Frame, Style, Label, Entry, Button, Spinbox
+from tkinter import Canvas, Tk, BOTH, X, LEFT, TOP
+from tkinter.ttk import Combobox, Frame, Label, Entry, Button, Spinbox
 from loguru import logger
-from random import randrange
+from random import randrange, choice
 from threading import Lock, Thread
 
 from User import User
-from Process import ProccessStates, Process
 from processManager import ProcessManager
 
 # настройка логирования
@@ -19,8 +18,11 @@ class MainFrame(Frame):
         self.initUI()
         self.users = []
         self.process_manager = process_manager
+
+        # запуск менеджера процессов в отдельном потоке
         pm_thread = Thread(target=process_manager.run, daemon=True)
         pm_thread.start()
+
 
     def initUI(self):
         self.master.title('Справедливое планирование')
@@ -136,13 +138,30 @@ class MainFrame(Frame):
     def create_pie_diagramm(self) -> None:
         frame5 = Frame(self)
         frame5.pack(fill=X)
+        self.canvas = Canvas(frame5, height=500, width=600)
+        self.canvas.pack(side=TOP)
+
+        colors = ['gray', 'brown', 'red', 
+                  'orange', 'yellow', 'lime', 
+                  'green', 'cyan', 'blue', 
+                  'navy', 'pink']
+
+        # отрисовка круговой диаграммы и легенды к ней
+        for i in range(0, 360, 120):
+            color = choice(colors)
+            self.canvas.create_arc(475,475,125,125,
+                                   start=i,extent=120,fill=color)
+            label = Label(frame5, text=f' пользователь {i} ')
+            label.config(background=color)
+            label.pack(side=LEFT, padx=5, pady=5)
+
 
 
 process_manager = ProcessManager(quantum=0.1, memory=8000)
 
 # параметры окна
 main_window = Tk()
-main_window.geometry('600x600+600+600')
+main_window.geometry('700x700+600+600')
 app = MainFrame(process_manager=process_manager)
 app.create_pie_diagramm()
 main_window.mainloop()
