@@ -52,7 +52,8 @@ class MainFrame(Frame):
                                 state='readonly')
         self.priority_cmb.current(1)
         self.priority_cmb.pack(side=LEFT, padx=5)
-        self.priority_btn = Button(frame2, text='Установить', width=10)
+        self.priority_btn = Button(frame2, text='Изменить', width=10,
+                                   command=self.set_priority)
         self.priority_btn.pack(side=LEFT, padx=6)
 
         frame3 = Frame(self)
@@ -74,7 +75,8 @@ class MainFrame(Frame):
         self.quant_lbl.pack(side=LEFT, padx=5, pady=5)
         self.quant_ent = Entry(frame4, width=50)
         self.quant_ent.pack(side=LEFT, padx=5)
-        self.quant_btn = Button(frame4, text='Принять', width=10)
+        self.quant_btn = Button(frame4, text='Принять', width=10,
+                                command=self.set_quantum)
         self.quant_btn.pack(side=LEFT, padx=5)
 
 
@@ -139,7 +141,7 @@ class MainFrame(Frame):
     def create_pie_diagramm(self) -> None:
         frame5 = Frame(self)
         frame5.pack(fill=X)
-        self.canvas = Canvas(frame5, height=500, width=600)
+        self.canvas = Canvas(frame5, height=400, width=600)
         self.canvas.pack(side=TOP)
         frame6 = Frame(self)
         frame6.pack(fill=X)
@@ -147,7 +149,7 @@ class MainFrame(Frame):
 
         # отрисовка круговой диаграммы и легенды к ней
         while True:
-            sleep(0.5)
+            sleep(1)
             prev_angle = 0
             self.canvas.delete()
             # если пользователи и процессы существуют
@@ -163,23 +165,51 @@ class MainFrame(Frame):
                 for share in self.process_manager.user_shares:
                     angle = 359.99/process_manager.total_processes * share.share
                     color = share.color
-                    self.canvas.create_arc(475,475,125,125,
+                    self.canvas.create_arc(475,375,125,25,
                                            start=prev_angle,extent=angle,fill=color,
-                                           width=1)
+                                           width=3)
                     prev_angle = prev_angle + angle
 
-                    label = Label(sub_frame, text=f' пользователь {share.user_name} ')
+                    percent = round(share.share/self.process_manager.total_processes*100, 1)
+                    label = Label(sub_frame, text=f' {share.user_name} ({percent}%) ')
                     label.config(background=color)
                     label.pack(side=LEFT, padx=5, pady=5)
                 lock.release()
 
 
+    def set_quantum(self) -> None | ValueError:
+        '''Устанавливает квант времени'''
+        quantum = float(self.quant_ent.get())
+        if quantum > 0.00000001 and quantum < 100:
+            self.process_manager.quantum = quantum
+            logger.info(f'Квант времени {quantum} установлен')
+        else:
+            logger.info(f'Квант времени {quantum} не подходит')
+            return ValueError(f'Квант времени {quantum} не подходит')
+
+
+    def set_priority(self) -> None | ValueError:
+        '''Устанавливает приортитет для пользователя'''
+        priority = int(self.priority_cmb.get())
+        if priority in [0, 1, 2, 3, 4, 5, 6]:
+            user_name = str(self.user_name_ent.get())
+            if self.__is_correct_user(user_name) == False:
+                for user in self.users:
+                    if user.user_name == user_name:
+                        user.priority = priority
+                        logger.info(f'Приоритет установлен успешно')
+            else:
+                logger.error('Такой пользователь ещё не добавлен')
+                return ValueError('Такой пользователь ещё не добавлен')
+        else:
+            logger.error('Такого приоритета быть не может')
+            return ValueError('Такого приоритета быть не может')
+            
 
 process_manager = ProcessManager(quantum=0.1, memory=8000)
-
 # параметры окна
 main_window = Tk()
-main_window.geometry('700x700+600+600')
+main_window.geometry('560x550+600+600')
 app = MainFrame(process_manager=process_manager)
 pie_thread = Thread(target=app.create_pie_diagramm, daemon=True)
 pie_thread.start()

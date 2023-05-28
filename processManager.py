@@ -9,10 +9,10 @@ from random import choice
 logger.add('../logs/process_manager.log', format='{time} {level} {message}',
            level='DEBUG', rotation='10 MB', compression='zip')
 
-colors = ['gray', 'brown', 'red', 
+colors = ['brown', 'red', 'fuchsia'
           'orange', 'yellow', 'lime', 
-          'green', 'cyan', 'blue', 
-          'navy', 'pink']
+          'green', 'cyan', 'goldenrod',
+          'pink', 'palegreen', 'aquamarine']
 
 # лист долей процессорного времени пользователей
 @dataclass
@@ -56,13 +56,16 @@ class ProcessManager(object):
                     flag = False
 
             if flag:
-                self.user_shares.append(UserShare(user_name=user.user_name, color=choice(colors)))
+                color = choice(colors)
+                colors.remove(color)
+                self.user_shares.append(UserShare(user_name=user.user_name, color=color))
         else:
-            self.user_shares.append(UserShare(user_name=user.user_name, color=choice(colors)))
+            color = choice(colors)
+            colors.remove(color)
+            self.user_shares.append(UserShare(user_name=user.user_name, color=color))
 
         # создание нового процесса
         free_pid = self.__free_pid()
-        sleep(0.5) # время на создание процесса
         process = Process(process_id=free_pid, user=user,
                           state=ProccessStates.SUSPENSE,
                           time=time)
@@ -106,7 +109,7 @@ class ProcessManager(object):
                         sleep(process.time)
                     else:
                         sleep(self.quantum)
-                    process.time = process.time - self.quantum
+                    process.time = process.time - self.quantum*10
                     counter = counter + 1
 
                     # проверка на завершение выполнения процесса
@@ -123,10 +126,9 @@ class ProcessManager(object):
                 # обновление доли пользователя
                 for share in self.user_shares:
                     if share.user_name == process.user.user_name:
-                        # доля = тики пользователя
                         share.share = share.share + counter
 
             for share in self.user_shares:
                 if self.total_processes != 0:
                     sh = share.share/self.total_processes
-                    logger.debug(f'Доля {share.user_name} составляет {sh}')
+                    #logger.debug(f'Доля {share.user_name} составляет {sh}')
