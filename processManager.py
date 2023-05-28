@@ -2,10 +2,25 @@ from Process import Process, ProccessStates
 from User import User
 from time import sleep
 from loguru import logger
+from dataclasses import dataclass
+from random import choice
 
 # настройка логирования
 logger.add('../logs/process_manager.log', format='{time} {level} {message}',
            level='DEBUG', rotation='10 MB', compression='zip')
+
+colors = ['gray', 'brown', 'red', 
+          'orange', 'yellow', 'lime', 
+          'green', 'cyan', 'blue', 
+          'navy', 'pink']
+
+# лист долей процессорного времени пользователей
+@dataclass
+class UserShare():
+    user_name: str 
+    color: str
+    share: int = 0
+
 
 class ProcessManager(object):
     '''Менеджер процессов отвечет за создание процессов и принятия решений
@@ -17,7 +32,11 @@ class ProcessManager(object):
         self.memory_use = 0.0
         self.cpu_use = 0.0
         self.process_list = []
-        self.quantum = abs(quantum) # квантум времени в секундах
+        # квантум времени в секундах
+        self.quantum = abs(quantum) 
+        # всего процессов обработано за всё время
+        self.total_processes = 0
+        self.user_shares = []
 
 
     def create_process(self, user: User, time: float) -> Process | ValueError:
@@ -27,13 +46,26 @@ class ProcessManager(object):
             logger.error(f'Недостаточно ресурсов для создания процесса user_id = {user.user_id}')
             return ValueError('Недостаточно ресурсов')
 
+        # начальное определение доли
+        if len(self.user_shares) != 0:
+            flag = True
+            for usr in self.user_shares:
+                # если такой пользователь уже есть, то 
+                # ничего не делаем
+                if usr.user_name == user.user_name:
+                    flag = False
+
+            if flag:
+                self.user_shares.append(UserShare(user_name=user.user_name, color=choice(colors)))
+        else:
+            self.user_shares.append(UserShare(user_name=user.user_name, color=choice(colors)))
+
         # создание нового процесса
         free_pid = self.__free_pid()
         sleep(0.5) # время на создание процесса
         process = Process(process_id=free_pid, user=user,
                           state=ProccessStates.SUSPENSE,
                           time=time)
-        # распределение процесса в сооветвующую приоритетную группу
         self.process_list.append(process)
         logger.info(f'Процесс pid = {process.process_id} создан')
         return process 
@@ -85,5 +117,16 @@ class ProcessManager(object):
                         break
                     process.state = ProccessStates.SUSPENSE
                     
-                logger.debug(f'Процесс pid = {process.process_id} выполняется {counter} раз')
+                #logger.debug(f'Процесс pid = {process.process_id} выполнился {counter} раз')
+                self.total_processes = self.total_processes + counter
 
+                # обновление доли пользователя
+                for share in self.user_shares:
+                    if share.user_name == process.user.user_name:
+                        # доля = тики пользователя
+                        share.share = share.share + counter
+
+            for share in self.user_shares:
+                if self.total_processes != 0:
+                    sh = share.share/self.total_processes
+                    logger.debug(f'Доля {share.user_name} составляет {sh}')

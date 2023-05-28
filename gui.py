@@ -1,8 +1,9 @@
-from tkinter import Canvas, Tk, BOTH, X, LEFT, TOP
-from tkinter.ttk import Combobox, Frame, Label, Entry, Button, Spinbox
+from tkinter import Canvas, Tk, BOTH, X, LEFT, TOP, ARC
+from tkinter.ttk import Combobox, Frame, Label, Entry, Button, Spinbox 
 from loguru import logger
 from random import randrange, choice
 from threading import Lock, Thread
+from time import sleep
 
 from User import User
 from processManager import ProcessManager
@@ -140,20 +141,37 @@ class MainFrame(Frame):
         frame5.pack(fill=X)
         self.canvas = Canvas(frame5, height=500, width=600)
         self.canvas.pack(side=TOP)
-
-        colors = ['gray', 'brown', 'red', 
-                  'orange', 'yellow', 'lime', 
-                  'green', 'cyan', 'blue', 
-                  'navy', 'pink']
+        frame6 = Frame(self)
+        frame6.pack(fill=X)
+        sub_frame = Frame(frame6)
 
         # отрисовка круговой диаграммы и легенды к ней
-        for i in range(0, 360, 120):
-            color = choice(colors)
-            self.canvas.create_arc(475,475,125,125,
-                                   start=i,extent=120,fill=color)
-            label = Label(frame5, text=f' пользователь {i} ')
-            label.config(background=color)
-            label.pack(side=LEFT, padx=5, pady=5)
+        while True:
+            sleep(0.5)
+            prev_angle = 0
+            self.canvas.delete()
+            # если пользователи и процессы существуют
+            if len(self.process_manager.user_shares) != 0 and \
+                    self.process_manager.total_processes != 0:
+
+                # отрисовка круговой диаграммы пропорционально углам
+                lock = Lock()
+                lock.acquire()
+                sub_frame.destroy()
+                sub_frame = Frame(frame6)
+                sub_frame.pack(fill=X)
+                for share in self.process_manager.user_shares:
+                    angle = 359.99/process_manager.total_processes * share.share
+                    color = share.color
+                    self.canvas.create_arc(475,475,125,125,
+                                           start=prev_angle,extent=angle,fill=color,
+                                           width=1)
+                    prev_angle = prev_angle + angle
+
+                    label = Label(sub_frame, text=f' пользователь {share.user_name} ')
+                    label.config(background=color)
+                    label.pack(side=LEFT, padx=5, pady=5)
+                lock.release()
 
 
 
@@ -163,5 +181,6 @@ process_manager = ProcessManager(quantum=0.1, memory=8000)
 main_window = Tk()
 main_window.geometry('700x700+600+600')
 app = MainFrame(process_manager=process_manager)
-app.create_pie_diagramm()
+pie_thread = Thread(target=app.create_pie_diagramm, daemon=True)
+pie_thread.start()
 main_window.mainloop()
